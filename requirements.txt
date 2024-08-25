@@ -1,0 +1,12 @@
+numpy 
+pandas
+seaborn
+matplotlib
+scikit-learn
+pydantic
+fastapi
+uvicorn
+uvloop
+httptools
+
+
