@@ -7,13 +7,22 @@ Created on Fri Aug 23 19:34:33 2024
 
 import uvicorn
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 import numpy as np
 import pandas as pd
 import pickle
 from BankNotes import BankNote
 
-
 app = FastAPI()
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
 
 # Load the model and scaler
 try:
@@ -55,15 +64,20 @@ def predict_price(data: BankNote):
         if SpecialHandling not in valid_special_handling:
             raise HTTPException(status_code=400, detail=f"Invalid SpecialHandling: {SpecialHandling}. Must be one of {valid_special_handling}")
         
+        if NumPackages <= 0:
+            raise HTTPException(status_code=400, detail="NumPackages must be greater than 0")
+        
         input_data = np.asarray([Distance, ShipmentType, NumPackages, SpecialHandling, PackageWeight])
-        selected_features =['Distance','ShipmentType','NumPackages','SpecialHandling','PackageWeight']
+        selected_features = ['Distance', 'ShipmentType', 'NumPackages', 'SpecialHandling', 'PackageWeight']
         input_data = pd.DataFrame([input_data], columns=selected_features)
 
-        #nput_data_reshaped = np.asarray(input_data_array).reshape(1, -1)
-        #input_data_reshaped = scaler.transform(input_data_reshaped)
         input_data_reshaped = scaler.transform(input_data)
         prediction = lr_model.predict(input_data_reshaped)
-        return {'prediction': prediction.tolist()}
+
+        # Round the prediction to the nearest whole number
+        rounded_prediction = round(prediction[0])
+
+        return {'prediction': rounded_prediction}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
